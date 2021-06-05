@@ -1,12 +1,19 @@
-int ThreeOrFiveMinuteSwitch = 3;
+
+
+
+
+#include <Wire.h> // Enable this line if using Arduino Uno, Mega, etc.
+#include <Adafruit_GFX.h>
+#include "Adafruit_LEDBackpack.h"
+  
+int ThreeOrFiveMinuteSwitch = 2;
 const int GoButton = 1;
-int HornButton = 5;
-
-
+int HornButton = 2;
 bool running = false;
 
-unsigned long millisToZero;
+Adafruit_7segment display = Adafruit_7segment();
 
+unsigned long millisToZero;
 unsigned long millisLastChecked;
 unsigned long millisCurrent;
 
@@ -24,17 +31,13 @@ void setup() {
   } else {
     millisToZero = 210 * 1000; // three and a half minutes
   }
+  
+  display.begin(0x70);
 }
 
 void loop() {
   if(digitalRead(GoButton) == LOW) {
-    running = true;
-    millisLastChecked = millis();
-
-
-  } else {
-    updateTime();
-    running = false;
+    toggleState();
   }
 
   if(running) {
@@ -47,11 +50,29 @@ void loop() {
 
 }
 
+void toggleState(){
+    if(running) {
+      //stop
+      running = false;
+    } else {
+      running = true;
+      millisLastChecked = millis();
+  }
+}
 void updateTime(){
     millisCurrent = millis();
     if(millisCurrent > millisLastChecked) {
       millisToZero = millisToZero - (millisCurrent - millisLastChecked);
       millisLastChecked = millisCurrent;
     }
-    write
+    writeTime();
 }
+void writeTime(){
+    display.writeDigitNum(0, (millisToZero / 1000000), false);
+    display.writeDigitNum(1, (millisToZero / 100000) % 10, false);
+    display.drawColon(true);
+    display.writeDigitNum(3, (millisToZero / 10000) % 10, false);
+    display.writeDigitNum(4, (millisToZero / 1000) % 10, false);
+    display.writeDisplay();
+}
+
