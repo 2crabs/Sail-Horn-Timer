@@ -90,7 +90,16 @@ void checkTimeMode(){
 void updateTime(){
     millisCurrent = millis();
     if(millisCurrent > millisLastChecked) {
-      millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+      if(millisToZero > (millisCurrent - millisLastChecked)) {
+        millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+      } else {
+        millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+          if(isFiveMinute) {
+            millisToZero += 300 * 1000 ; // five and a half minutes
+          } else {
+            millisToZero += 180 * 1000; // three and a half minutes
+          }
+      }
       millisLastChecked = millisCurrent;
     }
 }
