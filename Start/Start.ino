@@ -4,10 +4,26 @@
   
 int ThreeOrFiveMinuteSwitch = 2;
 const int GoButton = 1;
-int HornButton = 2;
+const int BuzzerPin = 3;
+const int HornButton = 2;
+
+const int FiveMinuteLongBuzzes[] = {315000, 300000, 255000, 240000 };
+const int FiveMinuteShortBuzzes[] = {305000, 304000, 303000, 302000, 301000 };
+int buzzerStartWindow = 90;
+int longBuzzerLength = 500;
+int shortBuzzerLength = 200;
+unsigned int buzzerStarted = 0;
+unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
+
+
 bool running = false;
 bool goButtonPressed = false;
 bool isFiveMinute;
+
+int const longBuzzMillis = 500;
+int const shortBuzzMillis = 100;
+
+
 
 int brightness = 1;
 
@@ -25,6 +41,7 @@ void setup() {
   pinMode(GoButton, INPUT_PULLUP);
   pinMode(HornButton, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(BuzzerPin, OUTPUT);
   Serial.begin(9600);
   isFiveMinute = digitalRead(ThreeOrFiveMinuteSwitch);
   if(isFiveMinute) {
@@ -44,8 +61,9 @@ void loop() {
     updateTime();
   }
   writeTime();
+  checkBuzzer();
 
-  delay(100);
+  delay(20);
 }
 
 void readInput(){
@@ -53,6 +71,48 @@ void readInput(){
   if(!running){
     checkTimeMode();
   }
+}
+
+void checkBuzzer(){
+  if(running) {
+    if(buzzerStarted == 0) {
+      checkIfBuzzerShouldStart();
+    } else {
+      if(shouldBuzzerStop()) {      
+        digitalWrite(BuzzerPin, LOW);
+        buzzerStarted = 0;
+      }
+    }
+  } else { //stopped, so stop buzzer.
+    digitalWrite(BuzzerPin, LOW);
+    buzzerStarted = 0;
+  }
+}
+
+bool checkIfBuzzerShouldStart() {
+  if(isFiveMinute){
+    for(int i=0; i < (sizeof(FiveMinuteLongBuzzes) / sizeof(FiveMinuteLongBuzzes[0])); i++) {
+      if(millisToZero < FiveMinuteLongBuzzes[i] &&
+        millisToZero > (FiveMinuteLongBuzzes[i] - buzzerStartWindow) ) {
+          digitalWrite(BuzzerPin, HIGH);
+          buzzerStarted = millis();
+          turnOffBuzzer = buzzerStarted + longBuzzerLength;
+      }
+    }
+    for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FiveMinuteShortBuzzes[0])); i++) {
+      if(millisToZero < FiveMinuteShortBuzzes[i] &&
+        millisToZero > FiveMinuteShortBuzzes[i] - buzzerStartWindow ) {
+          digitalWrite(BuzzerPin, HIGH);
+          buzzerStarted = millis();
+          turnOffBuzzer = buzzerStarted + shortBuzzerLength;
+      }
+    }
+  } else { //three minute
+  }
+}
+
+bool shouldBuzzerStop() {
+  return turnOffBuzzer < millis();
 }
 
 void checkGoButton(){
@@ -118,3 +178,4 @@ int getMinutes(){
 int getSeconds(){
   return (millisToZero / 1000 ) % 60;
 }
+
