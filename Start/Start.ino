@@ -45,9 +45,9 @@ void setup() {
   Serial.begin(9600);
   isFiveMinute = digitalRead(ThreeOrFiveMinuteSwitch);
   if(isFiveMinute) {
-    millisToZero = 330 * 1000 ; // five and a half minutes
+    millisToZero = 330 * 1000 -1 ; // five and a half minutes
   } else {
-    millisToZero = 210 * 1000; // three and a half minutes
+    millisToZero = 210 * 1000 -1; // three and a half minutes
   }    
 
   display.begin(0x70);
@@ -141,9 +141,9 @@ void checkTimeMode(){
   if(digitalRead(ThreeOrFiveMinuteSwitch) != isFiveMinute){
     isFiveMinute = digitalRead(ThreeOrFiveMinuteSwitch);
     if(isFiveMinute) {
-      millisToZero = 330 * 1000 ; // five and a half minutes
+      millisToZero = 330 * 1000 -1; // five and a half minutes
     } else {
-      millisToZero = 210 * 1000; // three and a half minutes
+      millisToZero = 210 * 1000 -1; // three and a half minutes
     }    
   }
 }
@@ -172,10 +172,14 @@ void writeTime(){
 }
 
 int getMinutes(){
-  return (millisToZero / 1000 / 60);
+  return getTotalSeconds() / 60;
 }
 
 int getSeconds(){
-  return (millisToZero / 1000 ) % 60;
+  return getTotalSeconds() % 60;
 }
 
+int getTotalSeconds(){
+  // so this is weird: we expect the timer to sound when zero is first display, not at the end of zero.
+  return (millisToZero / 1000) + 1;
+}
