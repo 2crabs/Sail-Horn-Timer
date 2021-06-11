@@ -7,11 +7,37 @@ const int GoButton = 1;
 const int BuzzerPin = 3;
 const int HornButton = 2;
 
-const int FiveMinuteLongBuzzes[] = {315000, 300000, 255000, 240000 };
-const int FiveMinuteShortBuzzes[] = {305000, 304000, 303000, 302000, 301000 };
+const int FiveMinuteLongBuzzes[] =
+  {
+    315000, 300000, 255000, 240000,
+    75000, 60000, 15000, 0
+  };
+const int FiveMinuteShortBuzzes[] =
+  {
+    305000, 304000, 303000, 302000, 301000 ,
+    245000, 244000, 243000, 242000, 241000 ,
+    65000, 64000, 63000, 62000, 61000 ,
+    5000, 4000, 3000, 2000, 1000    
+  };
+
+const int ThreeMinuteLongBuzzes[] =
+  {
+    195000, 180000, 179000, 178000,
+    135000, 120000, 119000,
+    75000,60000,
+    15000, 0
+  };
+const int ThreeMinuteShortBuzzes[] =
+  {
+    185000, 184000, 183000, 182000, 181000 ,
+    125000, 124000, 123000, 122000, 121000 ,
+    65000, 64000, 63000, 62000, 61000 ,
+    5000, 4000, 3000, 2000, 1000    
+  };
+
 int buzzerStartWindow = 90;
 int longBuzzerLength = 500;
-int shortBuzzerLength = 200;
+int shortBuzzerLength = 150;
 unsigned int buzzerStarted = 0;
 unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
 
@@ -108,6 +134,22 @@ bool checkIfBuzzerShouldStart() {
       }
     }
   } else { //three minute
+      for(int i=0; i < (sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0])); i++) {
+      if(millisToZero < ThreeMinuteLongBuzzes[i] &&
+        millisToZero > (ThreeMinuteLongBuzzes[i] - buzzerStartWindow) ) {
+          digitalWrite(BuzzerPin, HIGH);
+          buzzerStarted = millis();
+          turnOffBuzzer = buzzerStarted + longBuzzerLength;
+      }
+    }
+    for(int i=0; i < (sizeof(ThreeMinuteShortBuzzes) / sizeof(ThreeMinuteShortBuzzes[0])); i++) {
+      if(millisToZero < ThreeMinuteShortBuzzes[i] &&
+        millisToZero > ThreeMinuteShortBuzzes[i] - buzzerStartWindow ) {
+          digitalWrite(BuzzerPin, HIGH);
+          buzzerStarted = millis();
+          turnOffBuzzer = buzzerStarted + shortBuzzerLength;
+      }
+    }
   }
 }
 
@@ -155,9 +197,9 @@ void updateTime(){
       } else {
         millisToZero = millisToZero - (millisCurrent - millisLastChecked);
           if(isFiveMinute) {
-            millisToZero += 300 * 1000 ; // five and a half minutes
+            millisToZero += 300 * 1000 ; // five minutes
           } else {
-            millisToZero += 180 * 1000; // three and a half minutes
+            millisToZero += 210 * 1000; // three and a half minutes
           }
       }
       millisLastChecked = millisCurrent;
