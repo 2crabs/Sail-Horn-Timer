@@ -1,11 +1,13 @@
 
-
-#include "Adafruit_LEDBackpack.h"
+#include <TM1637TinyDisplay.h>
   
-int ThreeOrFiveMinuteSwitch = 2;
-const int GoButton = 1;
-const int BuzzerPin = 3;
-const int HornButton = 2;
+int ThreeOrFiveMinuteSwitch = 18;
+const int GoButton = 19;
+const int BuzzerPin = 21;
+const int HornButton = 18;
+
+#define DISP_CLK 2
+#define DISP_DIO 3
 
 const int FiveMinuteLongBuzzes[] =
   {
@@ -53,7 +55,7 @@ int const shortBuzzMillis = 100;
 
 int brightness = 1;
 
-Adafruit_7segment display = Adafruit_7segment();
+TM1637TinyDisplay display(DISP_CLK, DISP_DIO);
 
 unsigned long millisToZero;
 unsigned long millisLastChecked;
@@ -76,7 +78,7 @@ void setup() {
     millisToZero = 210 * 1000 -1; // three and a half minutes
   }    
 
-  display.begin(0x70);
+  display.clear();
   display.setBrightness(brightness);
 }
 
@@ -199,18 +201,16 @@ void updateTime(){
           if(isFiveMinute) {
             millisToZero += 300 * 1000 ; // five minutes
           } else {
-            millisToZero += 210 * 1000; // three and a half minutes
+            millisToZero += 240 * 1000; // four minutes Not sure how often to repeat three minute time.
           }
       }
       millisLastChecked = millisCurrent;
     }
 }
 void writeTime(){
-    display.writeDigitNum(1, getMinutes(), false);
-    display.drawColon(true);
-    display.writeDigitNum(3, (getSeconds() / 10) % 10, false);
-    display.writeDigitNum(4, getSeconds() % 10, false);
-    display.writeDisplay();
+    display.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+
+    display.showNumber( getSeconds(), true, 2, 2);
 }
 
 int getMinutes(){
