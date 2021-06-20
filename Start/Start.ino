@@ -199,9 +199,10 @@ void updateTime(){
       } else {
         millisToZero = millisToZero - (millisCurrent - millisLastChecked);
           if(isFiveMinute) {
-            millisToZero += 300 * 1000 ; // five minutes
+            millisToZero += 300 * 1000 ; // five minutes - keep running
           } else {
-            millisToZero += 240 * 1000; // four minutes Not sure how often to repeat three minute time.
+            running = false; // three minute countdown, stop, reset to 3:30.
+            millisToZero = 210 * 1000 -1; // three and a half minutes
           }
       }
       millisLastChecked = millisCurrent;
