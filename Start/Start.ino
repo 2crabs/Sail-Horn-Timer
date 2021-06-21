@@ -1,13 +1,14 @@
 
 #include <TM1637TinyDisplay.h>
   
-int ThreeOrFiveMinuteSwitch = 18;
-const int GoButton = 19;
-const int BuzzerPin = 21;
-const int HornButton = 18;
-
 #define DISP_CLK 2
 #define DISP_DIO 3
+#define RMT_CLK 4
+#define RMT_DIO 5
+#define FIVEMIN_PIN 18
+#define GOBTN_PIN 19
+#define BUZZER_PIN 7
+#define HORN_PIN 8
 
 const int FiveMinuteLongBuzzes[] =
   {
@@ -51,11 +52,10 @@ bool isFiveMinute;
 int const longBuzzMillis = 500;
 int const shortBuzzMillis = 100;
 
-
-
 int brightness = 1;
 
-TM1637TinyDisplay display(DISP_CLK, DISP_DIO);
+TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
+TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO);
 
 unsigned long millisToZero;
 unsigned long millisLastChecked;
@@ -64,22 +64,23 @@ unsigned long millisCurrent;
 
 
 void setup() {
-  // put your setup code here, to run once:
-  pinMode(ThreeOrFiveMinuteSwitch, INPUT);
-  pinMode(GoButton, INPUT_PULLUP);
-  pinMode(HornButton, INPUT_PULLUP);
+  pinMode(FIVEMIN_PIN, INPUT);
+  pinMode(GOBTN_PIN, INPUT_PULLUP);
+  pinMode(HORN_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(BuzzerPin, OUTPUT);
-  Serial.begin(9600);
-  isFiveMinute = digitalRead(ThreeOrFiveMinuteSwitch);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  isFiveMinute = digitalRead(FIVEMIN_PIN);
   if(isFiveMinute) {
     millisToZero = 330 * 1000 -1 ; // five and a half minutes
   } else {
     millisToZero = 210 * 1000 -1; // three and a half minutes
   }    
 
-  display.clear();
-  display.setBrightness(brightness);
+  mainDisplay.clear();
+  mainDisplay.setBrightness(brightness);
+  remoteDisplay.clear();
+  remoteDisplay.setBrightness(brightness);
 }
 
 void loop() {
@@ -107,12 +108,12 @@ void checkBuzzer(){
       checkIfBuzzerShouldStart();
     } else {
       if(shouldBuzzerStop()) {      
-        digitalWrite(BuzzerPin, LOW);
+        digitalWrite(BUZZER_PIN, LOW);
         buzzerStarted = 0;
       }
     }
   } else { //stopped, so stop buzzer.
-    digitalWrite(BuzzerPin, LOW);
+    digitalWrite(BUZZER_PIN, LOW);
     buzzerStarted = 0;
   }
 }
@@ -122,37 +123,35 @@ bool checkIfBuzzerShouldStart() {
     for(int i=0; i < (sizeof(FiveMinuteLongBuzzes) / sizeof(FiveMinuteLongBuzzes[0])); i++) {
       if(millisToZero < FiveMinuteLongBuzzes[i] &&
         millisToZero > (FiveMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          digitalWrite(BuzzerPin, HIGH);
-          buzzerStarted = millis();
-          turnOffBuzzer = buzzerStarted + longBuzzerLength;
+          buzz(longBuzzerLength);
       }
     }
     for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FiveMinuteShortBuzzes[0])); i++) {
       if(millisToZero < FiveMinuteShortBuzzes[i] &&
         millisToZero > FiveMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          digitalWrite(BuzzerPin, HIGH);
-          buzzerStarted = millis();
-          turnOffBuzzer = buzzerStarted + shortBuzzerLength;
+          buzz(shortBuzzerLength);
       }
     }
   } else { //three minute
-      for(int i=0; i < (sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0])); i++) {
+    for(int i=0; i < (sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0])); i++) {
       if(millisToZero < ThreeMinuteLongBuzzes[i] &&
         millisToZero > (ThreeMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          digitalWrite(BuzzerPin, HIGH);
-          buzzerStarted = millis();
-          turnOffBuzzer = buzzerStarted + longBuzzerLength;
+          buzz(longBuzzerLength);
       }
     }
     for(int i=0; i < (sizeof(ThreeMinuteShortBuzzes) / sizeof(ThreeMinuteShortBuzzes[0])); i++) {
       if(millisToZero < ThreeMinuteShortBuzzes[i] &&
         millisToZero > ThreeMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          digitalWrite(BuzzerPin, HIGH);
-          buzzerStarted = millis();
-          turnOffBuzzer = buzzerStarted + shortBuzzerLength;
+          buzz(shortBuzzerLength);
       }
     }
   }
+}
+
+void buzz(int length) {
+  digitalWrite(BUZZER_PIN, HIGH);
+  buzzerStarted = millis();
+  turnOffBuzzer = buzzerStarted + length;
 }
 
 bool shouldBuzzerStop() {
@@ -160,7 +159,7 @@ bool shouldBuzzerStop() {
 }
 
 void checkGoButton(){
-  if(digitalRead(GoButton) == LOW){
+  if(digitalRead(GOBTN_PIN) == LOW){
     if( !goButtonPressed ) {
       goButtonPressed = true;
       toggleState();
@@ -181,9 +180,8 @@ void toggleState(){
 }
 
 void checkTimeMode(){
-  
-  if(digitalRead(ThreeOrFiveMinuteSwitch) != isFiveMinute){
-    isFiveMinute = digitalRead(ThreeOrFiveMinuteSwitch);
+  if(digitalRead(FIVEMIN_PIN) != isFiveMinute){
+    isFiveMinute = digitalRead(FIVEMIN_PIN);
     if(isFiveMinute) {
       millisToZero = 330 * 1000 -1; // five and a half minutes
     } else {
@@ -209,9 +207,11 @@ void updateTime(){
     }
 }
 void writeTime(){
-    display.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-
-    display.showNumber( getSeconds(), true, 2, 2);
+    mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+    mainDisplay.showNumber( getSeconds(), true, 2, 2);
+    
+    remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+    remoteDisplay.showNumber( getSeconds(), true, 2, 2);
 }
 
 int getMinutes(){
