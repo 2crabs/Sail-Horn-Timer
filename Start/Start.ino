@@ -5,8 +5,8 @@
 #define DISP_DIO 3
 #define RMT_CLK 4
 #define RMT_DIO 5
-#define FIVEMIN_PIN 18
-#define GOBTN_PIN 19
+#define FIVEMIN_PIN 11
+#define GOBTN_PIN 10
 #define BUZZER_PIN 7
 #define HORN_PIN 8
 
