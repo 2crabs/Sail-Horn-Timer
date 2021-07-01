@@ -38,12 +38,39 @@ const int ThreeMinuteShortBuzzes[] =
     5000, 4000, 3000, 2000, 1000    
   };
 
+
+const int FiveMinuteLongHorns[] =
+  {
+    60000
+  };
+
+const int FiveMinuteShortHorns[] =
+  {
+    300000 ,
+    240000 ,
+    0
+  };
+
+const int ThreeMinuteLongHorns[] =
+  {
+    180000, 179000, 178000,
+    120000, 119000,
+    60000,
+    0
+  };
+
+// buzzerStartWindow should be shorter than any buzzer length.
 int buzzerStartWindow = 90;
 int longBuzzerLength = 500;
 int shortBuzzerLength = 150;
 unsigned int buzzerStarted = 0;
 unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
 
+int hornStartWindow = 90;
+int longHornLength = 800;
+int shortHornLength = 250;
+unsigned int hornStarted = 0;
+unsigned int turnOffHorn; // millis() after which horn should be stopped.
 
 bool running = false;
 bool goButtonPressed = false;
@@ -52,7 +79,9 @@ bool isFiveMinute;
 int const longBuzzMillis = 500;
 int const shortBuzzMillis = 100;
 
-int brightness = 1;
+int brightness = BRIGHT_HIGH;
+//int brightness = BRIGHT_7;
+//int brightness = BRIGHT_0;
 
 TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
 TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO);
@@ -69,6 +98,7 @@ void setup() {
   pinMode(HORN_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(HORN_PIN, OUTPUT);
 
   isFiveMinute = digitalRead(FIVEMIN_PIN);
   if(isFiveMinute) {
@@ -90,9 +120,10 @@ void loop() {
     updateTime();
   }
   writeTime();
+  checkHorn();
   checkBuzzer();
 
-  delay(20);
+  delay(5);
 }
 
 void readInput(){
@@ -123,32 +154,32 @@ bool checkIfBuzzerShouldStart() {
     for(int i=0; i < (sizeof(FiveMinuteLongBuzzes) / sizeof(FiveMinuteLongBuzzes[0])); i++) {
       if(millisToZero < FiveMinuteLongBuzzes[i] &&
         millisToZero > (FiveMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          buzz(longBuzzerLength);
+          startBuzzer(longBuzzerLength);
       }
     }
     for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FiveMinuteShortBuzzes[0])); i++) {
       if(millisToZero < FiveMinuteShortBuzzes[i] &&
         millisToZero > FiveMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          buzz(shortBuzzerLength);
+          startBuzzer(shortBuzzerLength);
       }
     }
   } else { //three minute
     for(int i=0; i < (sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0])); i++) {
       if(millisToZero < ThreeMinuteLongBuzzes[i] &&
         millisToZero > (ThreeMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          buzz(longBuzzerLength);
+          startBuzzer(longBuzzerLength);
       }
     }
     for(int i=0; i < (sizeof(ThreeMinuteShortBuzzes) / sizeof(ThreeMinuteShortBuzzes[0])); i++) {
       if(millisToZero < ThreeMinuteShortBuzzes[i] &&
         millisToZero > ThreeMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          buzz(shortBuzzerLength);
+          startBuzzer(shortBuzzerLength);
       }
     }
   }
 }
 
-void buzz(int length) {
+void startBuzzer(int length) {
   digitalWrite(BUZZER_PIN, HIGH);
   buzzerStarted = millis();
   turnOffBuzzer = buzzerStarted + length;
@@ -156,6 +187,63 @@ void buzz(int length) {
 
 bool shouldBuzzerStop() {
   return turnOffBuzzer < millis();
+}
+
+
+void checkHorn(){
+  if(running) {
+    if(hornStarted == 0) {
+      checkIfHornShouldStart();
+    } else {
+      if(shouldHornStop()) {      
+        digitalWrite(HORN_PIN, LOW);
+        hornStarted = 0;
+      }
+    }
+  } else { //stopped, so stop buzzer.
+    digitalWrite(HORN_PIN, LOW);
+    hornStarted = 0;
+  }
+}
+
+bool checkIfHornShouldStart() {
+  if(isFiveMinute){
+    for(int i=0; i < (sizeof(FiveMinuteLongHorns) / sizeof(FiveMinuteLongHorns[0])); i++) {
+      if(millisToZero < FiveMinuteLongHorns[i] &&
+        millisToZero > (FiveMinuteLongHorns[i] - hornStartWindow) ) {
+          startHorn(longHornLength);
+      }
+    }
+    for(int i=0; i < (sizeof(FiveMinuteShortHorns) / sizeof(FiveMinuteShortHorns[0])); i++) {
+      if(millisToZero < FiveMinuteShortHorns[i] &&
+        millisToZero > FiveMinuteShortHorns[i] - hornStartWindow ) {
+          startHorn(shortHornLength);
+      }
+    }
+  } else { //three minute
+    for(int i=0; i < (sizeof(ThreeMinuteLongHorns) / sizeof(ThreeMinuteLongHorns[0])); i++) {
+      if(millisToZero < ThreeMinuteLongHorns[i] &&
+        millisToZero > (ThreeMinuteLongHorns[i] - hornStartWindow) ) {
+          startHorn(longHornLength);
+      }
+    }
+    // for(int i=0; i < (sizeof(ThreeMinuteShortHorns) / sizeof(ThreeMinuteShortHorns[0])); i++) {
+    //   if(millisToZero < ThreeMinuteShortHorns[i] &&
+    //     millisToZero > ThreeMinuteShortHorns[i] - hornStartWindow ) {
+    //       startHorn(shortHornLength);
+    //   }
+    // }
+  }
+}
+
+void startHorn(int length) {
+  digitalWrite(HORN_PIN, HIGH);
+  hornStarted = millis();
+  turnOffHorn = hornStarted + length;
+}
+
+bool shouldHornStop() {
+  return turnOffHorn < millis();
 }
 
 void checkGoButton(){
