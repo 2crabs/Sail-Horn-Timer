@@ -59,6 +59,11 @@ const int ThreeMinuteLongHorns[] =
     0
   };
 
+const int ThreeMinuteShortHorns[] =
+  {
+    190000, 189500, 189000, 188500, 188000
+  };
+
 // buzzerStartWindow should be shorter than any buzzer length.
 int buzzerStartWindow = 90;
 int longBuzzerLength = 500;
@@ -227,12 +232,12 @@ bool checkIfHornShouldStart() {
           startHorn(longHornLength);
       }
     }
-    // for(int i=0; i < (sizeof(ThreeMinuteShortHorns) / sizeof(ThreeMinuteShortHorns[0])); i++) {
-    //   if(millisToZero < ThreeMinuteShortHorns[i] &&
-    //     millisToZero > ThreeMinuteShortHorns[i] - hornStartWindow ) {
-    //       startHorn(shortHornLength);
-    //   }
-    // }
+    for(int i=0; i < (sizeof(ThreeMinuteShortHorns) / sizeof(ThreeMinuteShortHorns[0])); i++) {
+      if(millisToZero < ThreeMinuteShortHorns[i] &&
+        millisToZero > ThreeMinuteShortHorns[i] - hornStartWindow ) {
+          startHorn(shortHornLength);
+      }
+    }
   }
 }
 
