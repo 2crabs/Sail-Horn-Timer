@@ -15,6 +15,8 @@ const int FiveMinuteLongBuzzes[] =
     315000, 300000, 255000, 240000,
     75000, 60000, 15000, 0
   };
+int FiveMinLongBuzzTotalCount;
+int FiveMinLongBuzzNextBuzzIndex;
 const int FiveMinuteShortBuzzes[] =
   {
     305000, 304000, 303000, 302000, 301000 ,
@@ -22,6 +24,8 @@ const int FiveMinuteShortBuzzes[] =
     65000, 64000, 63000, 62000, 61000 ,
     5000, 4000, 3000, 2000, 1000    
   };
+int FiveMinShortBuzzTotalCount;
+int FiveMinShortBuzzNextBuzzIndex;
 
 const int ThreeMinuteLongBuzzes[] =
   {
@@ -30,6 +34,9 @@ const int ThreeMinuteLongBuzzes[] =
     75000,60000,
     15000, 0
   };
+int ThreeMinLongBuzzTotalCount;
+int ThreeMinLongBuzzNextBuzzIndex;
+
 const int ThreeMinuteShortBuzzes[] =
   {
     185000, 184000, 183000, 182000, 181000 ,
@@ -37,68 +44,76 @@ const int ThreeMinuteShortBuzzes[] =
     65000, 64000, 63000, 62000, 61000 ,
     5000, 4000, 3000, 2000, 1000    
   };
+int ThreeMinShortBuzzTotalCount;
+int ThreeMinShortBuzzNextBuzzIndex;
 
 
-const int FiveMinuteLongHorns[] =
+const int FiveMinuteExtraLongHorns[] =
   {
     60000
   };
+int FiveMinExtraLongHornTotalCount;
+int FiveMinExtraLongHornNextHornIndex;
 
-const int FiveMinuteShortHorns[] =
+const int FiveMinuteLongHorns[] =
   {
     300000 ,
     240000 ,
     0
   };
+int FiveMinLongBuzzTotalCount;
+int FiveMinLongBuzzNextBuzzIndex;
 
 const int ThreeMinuteLongHorns[] =
   {
     180000, 179000, 178000,
     120000, 119000,
     60000,
-    0
+    0 // not really used. special case is handled below.
   };
+int ThreeMinShortBuzzTotalCount;
+int ThreeMinShortBuzzNextBuzzIndex;
+
 
 const int ThreeMinuteShortHorns[] =
   {
     190000, 189500, 189000, 188500, 188000
   };
+int ThreeMinShortBuzzTotalCount;
+int ThreeMinShortBuzzNextBuzzIndex;
 
 // buzzerStartWindow should be shorter than any buzzer length.
-int buzzerStartWindow = 90;
-int longBuzzerLength = 500;
-int shortBuzzerLength = 150;
+const int buzzerStartWindow = 90;
+const int longBuzzerLength = 500;
+const int shortBuzzerLength = 150;
 unsigned int buzzerStarted = 0;
 unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
 
-int hornStartWindow = 90;
-int longHornLength = 800;
-int shortHornLength = 250;
+const int hornStartWindow = 90;
+const int longHornLength = 800;
+const int extraLongHornLength = 2000;
+const int shortHornLength = 250;
 unsigned int hornStarted = 0;
 unsigned int turnOffHorn; // millis() after which horn should be stopped.
 
 bool running = false;
-bool goButtonPressed = false;
+bool isGoButtonPressed = false;
 bool isFiveMinute;
-
-int const longBuzzMillis = 500;
-int const shortBuzzMillis = 100;
-
-int brightness = BRIGHT_HIGH;
-//int brightness = BRIGHT_7;
-//int brightness = BRIGHT_0;
-
-TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
-TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO);
 
 unsigned long millisToZero;
 unsigned long millisLastChecked;
 unsigned long millisCurrent;
+int seconds;
 
+const int brightness = BRIGHT_HIGH;
+//int brightness = BRIGHT_7;
+//int brightness = BRIGHT_0;
 
+TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
+TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO, 200);
 
 void setup() {
-  pinMode(FIVEMIN_PIN, INPUT);
+  pinMode(FIVEMIN_PIN, INPUT_PULLUP);
   pinMode(GOBTN_PIN, INPUT_PULLUP);
   pinMode(HORN_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -106,16 +121,13 @@ void setup() {
   pinMode(HORN_PIN, OUTPUT);
 
   isFiveMinute = digitalRead(FIVEMIN_PIN);
-  if(isFiveMinute) {
-    millisToZero = 330 * 1000 -1 ; // five and a half minutes
-  } else {
-    millisToZero = 210 * 1000 -1; // three and a half minutes
-  }    
 
   mainDisplay.clear();
   mainDisplay.setBrightness(brightness);
   remoteDisplay.clear();
   remoteDisplay.setBrightness(brightness);
+
+  resetTime();
 }
 
 void loop() {
@@ -124,11 +136,11 @@ void loop() {
   if(running) {
     updateTime();
   }
-  writeTime();
+  writeTime(false);
   checkHorn();
   checkBuzzer();
 
-  delay(5);
+  delay(2);
 }
 
 void readInput(){
@@ -162,7 +174,7 @@ bool checkIfBuzzerShouldStart() {
           startBuzzer(longBuzzerLength);
       }
     }
-    for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FiveMinuteShortBuzzes[0])); i++) {
+    for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FazazaiveMinuteShortBuzzes[0])); i++) {
       if(millisToZero < FiveMinuteShortBuzzes[i] &&
         millisToZero > FiveMinuteShortBuzzes[i] - buzzerStartWindow ) {
           startBuzzer(shortBuzzerLength);
@@ -194,20 +206,14 @@ bool shouldBuzzerStop() {
   return turnOffBuzzer < millis();
 }
 
-
 void checkHorn(){
-  if(running) {
-    if(hornStarted == 0) {
-      checkIfHornShouldStart();
-    } else {
-      if(shouldHornStop()) {      
-        digitalWrite(HORN_PIN, LOW);
-        hornStarted = 0;
-      }
+  if(hornStarted == 0) {
+    checkIfHornShouldStart();
+  } else {
+    if(shouldHornStop()) {      
+      digitalWrite(HORN_PIN, LOW);
+      hornStarted = 0;
     }
-  } else { //stopped, so stop buzzer.
-    digitalWrite(HORN_PIN, LOW);
-    hornStarted = 0;
   }
 }
 
@@ -219,10 +225,10 @@ bool checkIfHornShouldStart() {
           startHorn(longHornLength);
       }
     }
-    for(int i=0; i < (sizeof(FiveMinuteShortHorns) / sizeof(FiveMinuteShortHorns[0])); i++) {
-      if(millisToZero < FiveMinuteShortHorns[i] &&
-        millisToZero > FiveMinuteShortHorns[i] - hornStartWindow ) {
-          startHorn(shortHornLength);
+    for(int i=0; i < (sizeof(FiveMinuteExtraLongHorns) / sizeof(FiveMinuteExtraLongHorns[0])); i++) {
+      if(millisToZero < FiveMinuteExtraLongHorns[i] &&
+        millisToZero > FiveMinuteExtraLongHorns[i] - hornStartWindow ) {
+          startHorn(extraLongHornLength);
       }
     }
   } else { //three minute
@@ -253,58 +259,80 @@ bool shouldHornStop() {
 
 void checkGoButton(){
   if(digitalRead(GOBTN_PIN) == LOW){
-    if( !goButtonPressed ) {
-      goButtonPressed = true;
-      toggleState();
+    if( !isGoButtonPressed ) {
+      isGoButtonPressed = true;
+      goButtonPress();
     }
   } else {
-    goButtonPressed = false;
+    isGoButtonPressed = false;
   }
 }
 
-void toggleState(){
+void goButtonPress(){
     if(running) {
       //stop
       running = false;
+      startBuzzer(shortBuzzerLength);
+      resetTime();
     } else {
+      // Go
       running = true;
+      startBuzzer(shortBuzzerLength);
       millisLastChecked = millis();
   }
+}
+
+void resetTime() {
+  if(isFiveMinute) {
+    millisToZero = 360 * 1000 -1 ; // six minutes
+  } else {
+    millisToZero = 210 * 1000 -1; // three and a half minutes
+  }
+  writeTime(true);
 }
 
 void checkTimeMode(){
   if(digitalRead(FIVEMIN_PIN) != isFiveMinute){
     isFiveMinute = digitalRead(FIVEMIN_PIN);
     if(isFiveMinute) {
-      millisToZero = 330 * 1000 -1; // five and a half minutes
+      millisToZero = 360 * 1000 -1; // six minutes
     } else {
       millisToZero = 210 * 1000 -1; // three and a half minutes
     }    
   }
 }
+
 void updateTime(){
-    millisCurrent = millis();
-    if(millisCurrent > millisLastChecked) {
-      if(millisToZero > (millisCurrent - millisLastChecked)) {
-        millisToZero = millisToZero - (millisCurrent - millisLastChecked);
-      } else {
-        millisToZero = millisToZero - (millisCurrent - millisLastChecked);
-          if(isFiveMinute) {
-            millisToZero += 300 * 1000 ; // five minutes - keep running
-          } else {
-            running = false; // three minute countdown, stop, reset to 3:30.
-            millisToZero = 210 * 1000 -1; // three and a half minutes
-          }
-      }
-      millisLastChecked = millisCurrent;
+  millisCurrent = millis();
+  if(millisCurrent > millisLastChecked) {
+    if(millisToZero > (millisCurrent - millisLastChecked)) {
+      millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+    } else {
+      millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+        if(isFiveMinute) {
+          millisToZero += 300 * 1000 ; // five minutes - keep running
+        } else {
+          // special case here: timer is stopped, but need to blow horn last time:
+          running = false; // three minute countdown, stop, reset to 3:30.
+          startHorn(longHornLength);
+          resetTime();
+        }
     }
+    millisLastChecked = millisCurrent;
+  }
 }
-void writeTime(){
+
+void writeTime(bool force){
+  if(force || seconds != getSeconds()){   
+    seconds = getSeconds();
+    mainDisplay.showString(" ",1,0);
     mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    mainDisplay.showNumber( getSeconds(), true, 2, 2);
-    
+    mainDisplay.showNumber( seconds, true, 2, 2);
+
+    remoteDisplay.showString(" ",1,0);
     remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    remoteDisplay.showNumber( getSeconds(), true, 2, 2);
+    remoteDisplay.showNumber( seconds, true, 2, 2);
+  }
 }
 
 int getMinutes(){
@@ -316,6 +344,6 @@ int getSeconds(){
 }
 
 int getTotalSeconds(){
-  // so this is weird: we expect the timer to sound when zero is first display, not at the end of zero.
+  // we expect the timer to sound when zero is first display, not at the end of zero.
   return (millisToZero / 1000) + 1;
 }
