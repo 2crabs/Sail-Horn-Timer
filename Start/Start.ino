@@ -15,8 +15,7 @@ const int FiveMinuteLongBuzzes[] =
     315000, 300000, 255000, 240000,
     75000, 60000, 15000, 0
   };
-int FiveMinLongBuzzTotalCount;
-int FiveMinLongBuzzNextBuzzIndex;
+  
 const int FiveMinuteShortBuzzes[] =
   {
     305000, 304000, 303000, 302000, 301000 ,
@@ -24,8 +23,6 @@ const int FiveMinuteShortBuzzes[] =
     65000, 64000, 63000, 62000, 61000 ,
     5000, 4000, 3000, 2000, 1000    
   };
-int FiveMinShortBuzzTotalCount;
-int FiveMinShortBuzzNextBuzzIndex;
 
 const int ThreeMinuteLongBuzzes[] =
   {
@@ -34,9 +31,7 @@ const int ThreeMinuteLongBuzzes[] =
     75000,60000,
     15000, 0
   };
-int ThreeMinLongBuzzTotalCount;
-int ThreeMinLongBuzzNextBuzzIndex;
-
+  
 const int ThreeMinuteShortBuzzes[] =
   {
     185000, 184000, 183000, 182000, 181000 ,
@@ -44,16 +39,11 @@ const int ThreeMinuteShortBuzzes[] =
     65000, 64000, 63000, 62000, 61000 ,
     5000, 4000, 3000, 2000, 1000    
   };
-int ThreeMinShortBuzzTotalCount;
-int ThreeMinShortBuzzNextBuzzIndex;
-
 
 const int FiveMinuteExtraLongHorns[] =
   {
     60000
   };
-int FiveMinExtraLongHornTotalCount;
-int FiveMinExtraLongHornNextHornIndex;
 
 const int FiveMinuteLongHorns[] =
   {
@@ -61,8 +51,6 @@ const int FiveMinuteLongHorns[] =
     240000 ,
     0
   };
-int FiveMinLongBuzzTotalCount;
-int FiveMinLongBuzzNextBuzzIndex;
 
 const int ThreeMinuteLongHorns[] =
   {
@@ -71,16 +59,29 @@ const int ThreeMinuteLongHorns[] =
     60000,
     0 // not really used. special case is handled below.
   };
-int ThreeMinShortBuzzTotalCount;
-int ThreeMinShortBuzzNextBuzzIndex;
-
 
 const int ThreeMinuteShortHorns[] =
   {
     190000, 189500, 189000, 188500, 188000
   };
+
+// The totalCount variables are set in initializeArrayVariables() 
+int FiveMinLongBuzzTotalCount;
+int FiveMinLongBuzzNextBuzzIndex = 0;
+int FiveMinShortBuzzTotalCount;
+int FiveMinShortBuzzNextBuzzIndex = 0;
+int ThreeMinLongBuzzTotalCount;
+int ThreeMinLongBuzzNextBuzzIndex = 0;
 int ThreeMinShortBuzzTotalCount;
-int ThreeMinShortBuzzNextBuzzIndex;
+int ThreeMinShortBuzzNextBuzzIndex = 0;
+int FiveMinExtraLongHornTotalCount;
+int FiveMinExtraLongHornNextHornIndex = 0;
+int FiveMinLongHornTotalCount;
+int FiveMinLongHornNextHornIndex = 0;
+int ThreeMinLongHornTotalCount;
+int ThreeMinLongHornNextHornIndex = 0;
+int ThreeMinShortHornTotalCount;
+int ThreeMinShortHornNextHornIndex = 0;
 
 // buzzerStartWindow should be shorter than any buzzer length.
 const int buzzerStartWindow = 90;
@@ -120,6 +121,7 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(HORN_PIN, OUTPUT);
 
+  initializeArrayVariables();
   isFiveMinute = digitalRead(FIVEMIN_PIN);
 
   mainDisplay.clear();
@@ -141,6 +143,17 @@ void loop() {
   checkBuzzer();
 
   delay(2);
+}
+
+void initializeArrayVariables(){
+  FiveMinLongBuzzTotalCount = sizeof(FiveMinuteLongBuzzes) / sizeof(FiveMinuteLongBuzzes[0]);
+  FiveMinShortBuzzTotalCount = sizeof(FiveMinuteShortBuzzes) / sizeof(FiveMinuteShortBuzzes[0]);
+  ThreeMinLongBuzzTotalCount = sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0]);
+  ThreeMinShortBuzzTotalCount = sizeof(ThreeMinuteShortBuzzes) / sizeof(ThreeMinuteShortBuzzes[0]);
+  FiveMinExtraLongHornTotalCount = sizeof(FiveMinuteExtraLongHorns) / sizeof(FiveMinuteExtraLongHorns[0]);
+  FiveMinLongHornTotalCount = sizeof(FiveMinuteLongHorns) / sizeof(FiveMinuteLongHorns[0]);
+  ThreeMinLongHornTotalCount = sizeof(ThreeMinuteLongHorns) / sizeof(ThreeMinuteLongHorns[0]);
+  ThreeMinShortHornTotalCount = sizeof(ThreeMinuteShortHorns) / sizeof(ThreeMinuteShortHorns[0]);
 }
 
 void readInput(){
@@ -168,31 +181,30 @@ void checkBuzzer(){
 
 bool checkIfBuzzerShouldStart() {
   if(isFiveMinute){
-    for(int i=0; i < (sizeof(FiveMinuteLongBuzzes) / sizeof(FiveMinuteLongBuzzes[0])); i++) {
-      if(millisToZero < FiveMinuteLongBuzzes[i] &&
-        millisToZero > (FiveMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          startBuzzer(longBuzzerLength);
+    if( FiveMinLongBuzzNextBuzzIndex < FiveMinLongBuzzTotalCount &&
+      millisToZero < FiveMinuteLongBuzzes[FiveMinLongBuzzNextBuzzIndex]) {
+        FiveMinLongBuzzNextBuzzIndex++;
+        startBuzzer(longBuzzerLength);
       }
-    }
-    for(int i=0; i < (sizeof(FiveMinuteShortBuzzes) / sizeof(FazazaiveMinuteShortBuzzes[0])); i++) {
-      if(millisToZero < FiveMinuteShortBuzzes[i] &&
-        millisToZero > FiveMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          startBuzzer(shortBuzzerLength);
+    
+    if( FiveMinShortBuzzNextBuzzIndex < FiveMinShortBuzzTotalCount &&
+      millisToZero < FiveMinuteShortBuzzes[FiveMinShortBuzzNextBuzzIndex] ) {
+        FiveMinShortBuzzNextBuzzIndex++;
+        startBuzzer(shortBuzzerLength);
       }
-    }
   } else { //three minute
-    for(int i=0; i < (sizeof(ThreeMinuteLongBuzzes) / sizeof(ThreeMinuteLongBuzzes[0])); i++) {
-      if(millisToZero < ThreeMinuteLongBuzzes[i] &&
-        millisToZero > (ThreeMinuteLongBuzzes[i] - buzzerStartWindow) ) {
-          startBuzzer(longBuzzerLength);
+  
+    if( ThreeMinLongBuzzNextBuzzIndex < ThreeMinLongBuzzTotalCount &&
+      millisToZero < ThreeMinuteLongBuzzes[ThreeMinLongBuzzNextBuzzIndex] ) {
+        ThreeMinLongBuzzNextBuzzIndex++;
+        startBuzzer(longBuzzerLength);
       }
-    }
-    for(int i=0; i < (sizeof(ThreeMinuteShortBuzzes) / sizeof(ThreeMinuteShortBuzzes[0])); i++) {
-      if(millisToZero < ThreeMinuteShortBuzzes[i] &&
-        millisToZero > ThreeMinuteShortBuzzes[i] - buzzerStartWindow ) {
-          startBuzzer(shortBuzzerLength);
+    
+    if( ThreeMinShortBuzzNextBuzzIndex < ThreeMinShortBuzzTotalCount &&
+      millisToZero < ThreeMinuteShortBuzzes[ThreeMinShortBuzzNextBuzzIndex] ) {
+        ThreeMinShortBuzzNextBuzzIndex++;
+        startBuzzer(shortBuzzerLength);
       }
-    }
   }
 }
 
@@ -219,30 +231,29 @@ void checkHorn(){
 
 bool checkIfHornShouldStart() {
   if(isFiveMinute){
-    for(int i=0; i < (sizeof(FiveMinuteLongHorns) / sizeof(FiveMinuteLongHorns[0])); i++) {
-      if(millisToZero < FiveMinuteLongHorns[i] &&
-        millisToZero > (FiveMinuteLongHorns[i] - hornStartWindow) ) {
-          startHorn(longHornLength);
-      }
+    if( FiveMinLongHornNextHornIndex < FiveMinLongHornTotalCount &&
+    millisToZero < FiveMinuteLongHorns[FiveMinLongHornNextHornIndex] ) {
+      FiveMinLongHornNextHornIndex++;
+      startHorn(longHornLength);
     }
-    for(int i=0; i < (sizeof(FiveMinuteExtraLongHorns) / sizeof(FiveMinuteExtraLongHorns[0])); i++) {
-      if(millisToZero < FiveMinuteExtraLongHorns[i] &&
-        millisToZero > FiveMinuteExtraLongHorns[i] - hornStartWindow ) {
-          startHorn(extraLongHornLength);
-      }
+    if( FiveMinExtraLongHornNextHornIndex < FiveMinExtraLongHornTotalCount &&
+    millisToZero < FiveMinuteExtraLongHorns[FiveMinExtraLongHornNextHornIndex] ) {
+      FiveMinExtraLongHornNextHornIndex++;
+      startHorn(extraLongHornLength);
     }
   } else { //three minute
-    for(int i=0; i < (sizeof(ThreeMinuteLongHorns) / sizeof(ThreeMinuteLongHorns[0])); i++) {
-      if(millisToZero < ThreeMinuteLongHorns[i] &&
-        millisToZero > (ThreeMinuteLongHorns[i] - hornStartWindow) ) {
-          startHorn(longHornLength);
-      }
+
+  
+    if( ThreeMinLongHornNextHornIndex < ThreeMinLongHornTotalCount &&
+    millisToZero < ThreeMinuteLongHorns[ThreeMinLongHornNextHornIndex] ) {
+      ThreeMinLongHornNextHornIndex++;
+      startHorn(longHornLength);
     }
-    for(int i=0; i < (sizeof(ThreeMinuteShortHorns) / sizeof(ThreeMinuteShortHorns[0])); i++) {
-      if(millisToZero < ThreeMinuteShortHorns[i] &&
-        millisToZero > ThreeMinuteShortHorns[i] - hornStartWindow ) {
-          startHorn(shortHornLength);
-      }
+
+    if( ThreeMinShortHornNextHornIndex < ThreeMinShortHornTotalCount &&
+    millisToZero < ThreeMinuteShortHorns[ThreeMinShortHornNextHornIndex] ) {
+      ThreeMinShortHornNextHornIndex++;
+      startHorn(shortHornLength);
     }
   }
 }
@@ -269,26 +280,40 @@ void checkGoButton(){
 }
 
 void goButtonPress(){
-    if(running) {
-      //stop
-      running = false;
-      startBuzzer(shortBuzzerLength);
-      resetTime();
-    } else {
-      // Go
-      running = true;
-      startBuzzer(shortBuzzerLength);
-      millisLastChecked = millis();
+  if(running) {
+    //stop
+    running = false;
+    startBuzzer(shortBuzzerLength);
+    resetTime();
+  } else {
+    // Go
+    running = true;
+    startBuzzer(shortBuzzerLength);
+    millisLastChecked = millis();
   }
 }
 
 void resetTime() {
   if(isFiveMinute) {
     millisToZero = 360 * 1000 -1 ; // six minutes
+    resetArrayIndexes();
   } else {
     millisToZero = 210 * 1000 -1; // three and a half minutes
+    resetArrayIndexes();
   }
   writeTime(true);
+}
+
+void resetArrayIndexes() {
+  FiveMinLongBuzzNextBuzzIndex = 0;
+  FiveMinShortBuzzNextBuzzIndex = 0;
+  ThreeMinLongBuzzNextBuzzIndex = 0;
+  ThreeMinShortBuzzNextBuzzIndex = 0;
+  FiveMinExtraLongHornNextHornIndex = 0;
+  FiveMinLongHornNextHornIndex = 0;
+  ThreeMinLongHornNextHornIndex = 0;
+  ThreeMinShortHornNextHornIndex = 0;
+
 }
 
 void checkTimeMode(){
@@ -310,7 +335,7 @@ void updateTime(){
     } else {
       millisToZero = millisToZero - (millisCurrent - millisLastChecked);
         if(isFiveMinute) {
-          millisToZero += 300 * 1000 ; // five minutes - keep running
+          resetToFiveMin();
         } else {
           // special case here: timer is stopped, but need to blow horn last time:
           running = false; // three minute countdown, stop, reset to 3:30.
@@ -320,6 +345,33 @@ void updateTime(){
     }
     millisLastChecked = millisCurrent;
   }
+}
+
+void resetToFiveMin(){
+  millisToZero += 300 * 1000 ; // five minutes - keep running
+  resetArrayIndexes();
+  setArrayIndexesToFiveMin();
+}
+
+void setArrayIndexesToFiveMin(){
+  FiveMinLongBuzzNextBuzzIndex = 
+    getFiveMinuteIndex(FiveMinuteLongBuzzes, sizeof(FiveMinuteLongBuzzes)/sizeof(FiveMinuteLongBuzzes[0]));
+  FiveMinShortBuzzNextBuzzIndex =
+      getFiveMinuteIndex(FiveMinuteShortBuzzes, sizeof(FiveMinuteShortBuzzes)/sizeof(FiveMinuteShortBuzzes[0]));
+  FiveMinExtraLongHornNextHornIndex =
+    getFiveMinuteIndex(FiveMinuteExtraLongHorns, sizeof(FiveMinuteExtraLongHorns)/sizeof(FiveMinuteExtraLongHorns[0]));
+  FiveMinLongHornNextHornIndex =
+    getFiveMinuteIndex(FiveMinuteLongHorns, sizeof(FiveMinuteLongHorns)/sizeof(FiveMinuteLongHorns[0]));
+}
+
+int getFiveMinuteIndex(const int arrayToCheck[], int arrayLength){
+  for(int i = 0; i < arrayLength; i++ ){
+    if(arrayToCheck[i] <= 3600 ){
+      return i;
+    }
+  }
+  
+  return arrayLength;
 }
 
 void writeTime(bool force){
