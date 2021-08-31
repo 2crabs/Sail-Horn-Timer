@@ -21,7 +21,7 @@ const int FiveMinuteShortBuzzes[] =
     305000, 304000, 303000, 302000, 301000 ,
     245000, 244000, 243000, 242000, 241000 ,
     65000, 64000, 63000, 62000, 61000 ,
-    5000, 4000, 3000, 2000, 1000    
+    5000, 4000, 3000, 2000, 1000
   };
 
 const int ThreeMinuteLongBuzzes[] =
@@ -319,11 +319,7 @@ void resetArrayIndexes() {
 void checkTimeMode(){
   if(digitalRead(FIVEMIN_PIN) != isFiveMinute){
     isFiveMinute = digitalRead(FIVEMIN_PIN);
-    if(isFiveMinute) {
-      millisToZero = 360 * 1000 -1; // six minutes
-    } else {
-      millisToZero = 210 * 1000 -1; // three and a half minutes
-    }    
+    resetTime();    
   }
 }
 
@@ -357,7 +353,7 @@ void setArrayIndexesToFiveMin(){
   FiveMinLongBuzzNextBuzzIndex = 
     getFiveMinuteIndex(FiveMinuteLongBuzzes, sizeof(FiveMinuteLongBuzzes)/sizeof(FiveMinuteLongBuzzes[0]));
   FiveMinShortBuzzNextBuzzIndex =
-      getFiveMinuteIndex(FiveMinuteShortBuzzes, sizeof(FiveMinuteShortBuzzes)/sizeof(FiveMinuteShortBuzzes[0]));
+    getFiveMinuteIndex(FiveMinuteShortBuzzes, sizeof(FiveMinuteShortBuzzes)/sizeof(FiveMinuteShortBuzzes[0]));
   FiveMinExtraLongHornNextHornIndex =
     getFiveMinuteIndex(FiveMinuteExtraLongHorns, sizeof(FiveMinuteExtraLongHorns)/sizeof(FiveMinuteExtraLongHorns[0]));
   FiveMinLongHornNextHornIndex =
@@ -366,7 +362,7 @@ void setArrayIndexesToFiveMin(){
 
 int getFiveMinuteIndex(const int arrayToCheck[], int arrayLength){
   for(int i = 0; i < arrayLength; i++ ){
-    if(arrayToCheck[i] <= 3600 ){
+    if(arrayToCheck[i] <= (360 * 1000) ){
       return i;
     }
   }
