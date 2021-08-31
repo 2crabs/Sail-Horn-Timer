@@ -87,15 +87,15 @@ int ThreeMinShortHornNextHornIndex = 0;
 const int buzzerStartWindow = 90;
 const int longBuzzerLength = 500;
 const int shortBuzzerLength = 150;
-unsigned int buzzerStarted = 0;
+bool buzzerStarted = false;
 unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
 
 const int hornStartWindow = 90;
 const int longHornLength = 800;
 const int extraLongHornLength = 2000;
 const int shortHornLength = 250;
-unsigned int hornStarted = 0;
-unsigned int turnOffHorn; // millis() after which horn should be stopped.
+bool hornStarted = false;
+unsigned long turnOffHorn; // millis() after which horn should be stopped.
 
 bool running = false;
 bool isGoButtonPressed = false;
@@ -138,11 +138,10 @@ void loop() {
   if(running) {
     updateTime();
   }
-  writeTime(false);
   checkHorn();
   checkBuzzer();
+  writeTime(false);
 
-  delay(2);
 }
 
 void initializeArrayVariables(){
@@ -165,17 +164,17 @@ void readInput(){
 
 void checkBuzzer(){
   if(running) {
-    if(buzzerStarted == 0) {
+    if(!buzzerStarted) {
       checkIfBuzzerShouldStart();
     } else {
       if(shouldBuzzerStop()) {      
         digitalWrite(BUZZER_PIN, LOW);
-        buzzerStarted = 0;
+        buzzerStarted = false;
       }
     }
   } else { //stopped, so stop buzzer.
     digitalWrite(BUZZER_PIN, LOW);
-    buzzerStarted = 0;
+    buzzerStarted = false;
   }
 }
 
@@ -192,14 +191,12 @@ bool checkIfBuzzerShouldStart() {
         FiveMinShortBuzzNextBuzzIndex++;
         startBuzzer(shortBuzzerLength);
       }
-  } else { //three minute
-  
+  } else { //three minute  
     if( ThreeMinLongBuzzNextBuzzIndex < ThreeMinLongBuzzTotalCount &&
       millisToZero < ThreeMinuteLongBuzzes[ThreeMinLongBuzzNextBuzzIndex] ) {
         ThreeMinLongBuzzNextBuzzIndex++;
         startBuzzer(longBuzzerLength);
-      }
-    
+      }    
     if( ThreeMinShortBuzzNextBuzzIndex < ThreeMinShortBuzzTotalCount &&
       millisToZero < ThreeMinuteShortBuzzes[ThreeMinShortBuzzNextBuzzIndex] ) {
         ThreeMinShortBuzzNextBuzzIndex++;
@@ -210,8 +207,8 @@ bool checkIfBuzzerShouldStart() {
 
 void startBuzzer(int length) {
   digitalWrite(BUZZER_PIN, HIGH);
-  buzzerStarted = millis();
-  turnOffBuzzer = buzzerStarted + length;
+  buzzerStarted = true;
+  turnOffBuzzer = millis() + length;
 }
 
 bool shouldBuzzerStop() {
@@ -219,12 +216,12 @@ bool shouldBuzzerStop() {
 }
 
 void checkHorn(){
-  if(hornStarted == 0) {
+  if(!hornStarted) {
     checkIfHornShouldStart();
   } else {
-    if(shouldHornStop()) {      
+    if(shouldHornStop()) {
       digitalWrite(HORN_PIN, LOW);
-      hornStarted = 0;
+      hornStarted = false;
     }
   }
 }
@@ -242,7 +239,6 @@ bool checkIfHornShouldStart() {
       startHorn(extraLongHornLength);
     }
   } else { //three minute
-
   
     if( ThreeMinLongHornNextHornIndex < ThreeMinLongHornTotalCount &&
     millisToZero < ThreeMinuteLongHorns[ThreeMinLongHornNextHornIndex] ) {
@@ -260,8 +256,9 @@ bool checkIfHornShouldStart() {
 
 void startHorn(int length) {
   digitalWrite(HORN_PIN, HIGH);
-  hornStarted = millis();
-  turnOffHorn = hornStarted + length;
+  hornStarted = true;
+    
+  turnOffHorn = millis() + (unsigned long)length;  
 }
 
 bool shouldHornStop() {
@@ -325,7 +322,7 @@ void checkTimeMode(){
 
 void updateTime(){
   millisCurrent = millis();
-  if(millisCurrent > millisLastChecked) {
+  //if(millisCurrent > millisLastChecked) {
     if(millisToZero > (millisCurrent - millisLastChecked)) {
       millisToZero = millisToZero - (millisCurrent - millisLastChecked);
     } else {
@@ -340,7 +337,7 @@ void updateTime(){
         }
     }
     millisLastChecked = millisCurrent;
-  }
+  //}
 }
 
 void resetToFiveMin(){
