@@ -100,6 +100,7 @@ unsigned long turnOffHorn; // millis() after which horn should be stopped.
 bool running = false;
 bool isGoButtonPressed = false;
 unsigned long lastGoButtonPress;
+unsigned long lastGoButtonDown;
 bool isFiveMinute;
 
 unsigned long millisToZero;
@@ -270,13 +271,18 @@ void checkGoButton(){
   if(digitalRead(GOBTN_PIN) == LOW){
     if( !isGoButtonPressed) {
       isGoButtonPressed = true;
-      if(lastGoButtonPress < (millis() - 20)){
-        lastGoButtonPress = millis();
-        goButtonPress();
+      if(lastGoButtonPress < (millis() - 20)
+        && lastGoButtonDown < (millis() - 20)){
+          lastGoButtonPress = millis();
+          goButtonPress();
       }
     }
+    lastGoButtonDown = millis();
   } else {
-    isGoButtonPressed = false;
+    if(lastGoButtonPress < (millis() - 20)
+      && lastGoButtonDown < (millis() - 20)){
+        isGoButtonPressed = false;
+    }
   }
 }
 
