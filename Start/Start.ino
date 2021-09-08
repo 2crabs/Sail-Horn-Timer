@@ -85,13 +85,13 @@ int ThreeMinShortHornNextHornIndex = 0;
 
 // buzzerStartWindow should be shorter than any buzzer length.
 const int buzzerStartWindow = 90;
-const int longBuzzerLength = 500;
+const int longBuzzerLength = 900;
 const int shortBuzzerLength = 150;
 bool buzzerStarted = false;
 unsigned int turnOffBuzzer; // millis() after which buzzer should be stopped.
 
 const int hornStartWindow = 90;
-const int longHornLength = 800;
+const int longHornLength = 900;
 const int extraLongHornLength = 2000;
 const int shortHornLength = 250;
 bool hornStarted = false;
