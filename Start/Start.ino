@@ -103,8 +103,10 @@ unsigned long lastGoButtonPress;
 unsigned long lastGoButtonDown;
 bool isFiveMinute;
 
-unsigned long millisToZero;
-unsigned long millisLastChecked;
+//unsigned long millisToZero;
+unsigned long endMilli;
+unsigned long pausedMillisRemaining;
+//unsigned long millisLastChecked;
 unsigned long millisCurrent;
 int seconds;
 
@@ -138,7 +140,7 @@ void loop() {
   readInput();
 
   if(running) {
-    updateTime();
+    isTimerPastZero();
   }
   checkHorn();
   checkBuzzer();
@@ -183,24 +185,24 @@ void checkBuzzer(){
 bool checkIfBuzzerShouldStart() {
   if(isFiveMinute){
     if( FiveMinLongBuzzNextBuzzIndex < FiveMinLongBuzzTotalCount &&
-      millisToZero < FiveMinuteLongBuzzes[FiveMinLongBuzzNextBuzzIndex]) {
+      getMillisRemaining() < FiveMinuteLongBuzzes[FiveMinLongBuzzNextBuzzIndex]) {
         FiveMinLongBuzzNextBuzzIndex++;
         startBuzzer(longBuzzerLength);
       }
     
     if( FiveMinShortBuzzNextBuzzIndex < FiveMinShortBuzzTotalCount &&
-      millisToZero < FiveMinuteShortBuzzes[FiveMinShortBuzzNextBuzzIndex] ) {
+      getMillisRemaining() < FiveMinuteShortBuzzes[FiveMinShortBuzzNextBuzzIndex] ) {
         FiveMinShortBuzzNextBuzzIndex++;
         startBuzzer(shortBuzzerLength);
       }
   } else { //three minute  
     if( ThreeMinLongBuzzNextBuzzIndex < ThreeMinLongBuzzTotalCount &&
-      millisToZero < ThreeMinuteLongBuzzes[ThreeMinLongBuzzNextBuzzIndex] ) {
+      getMillisRemaining() < ThreeMinuteLongBuzzes[ThreeMinLongBuzzNextBuzzIndex] ) {
         ThreeMinLongBuzzNextBuzzIndex++;
         startBuzzer(longBuzzerLength);
       }    
     if( ThreeMinShortBuzzNextBuzzIndex < ThreeMinShortBuzzTotalCount &&
-      millisToZero < ThreeMinuteShortBuzzes[ThreeMinShortBuzzNextBuzzIndex] ) {
+      getMillisRemaining() < ThreeMinuteShortBuzzes[ThreeMinShortBuzzNextBuzzIndex] ) {
         ThreeMinShortBuzzNextBuzzIndex++;
         startBuzzer(shortBuzzerLength);
       }
@@ -231,25 +233,25 @@ void checkHorn(){
 bool checkIfHornShouldStart() {
   if(isFiveMinute){
     if( FiveMinLongHornNextHornIndex < FiveMinLongHornTotalCount &&
-    millisToZero < FiveMinuteLongHorns[FiveMinLongHornNextHornIndex] ) {
+    getMillisRemaining() < FiveMinuteLongHorns[FiveMinLongHornNextHornIndex] ) {
       FiveMinLongHornNextHornIndex++;
       startHorn(longHornLength);
     }
     if( FiveMinExtraLongHornNextHornIndex < FiveMinExtraLongHornTotalCount &&
-    millisToZero < FiveMinuteExtraLongHorns[FiveMinExtraLongHornNextHornIndex] ) {
+    getMillisRemaining() < FiveMinuteExtraLongHorns[FiveMinExtraLongHornNextHornIndex] ) {
       FiveMinExtraLongHornNextHornIndex++;
       startHorn(extraLongHornLength);
     }
   } else { //three minute
   
     if( ThreeMinLongHornNextHornIndex < ThreeMinLongHornTotalCount &&
-    millisToZero < ThreeMinuteLongHorns[ThreeMinLongHornNextHornIndex] ) {
+    getMillisRemaining() < ThreeMinuteLongHorns[ThreeMinLongHornNextHornIndex] ) {
       ThreeMinLongHornNextHornIndex++;
       startHorn(longHornLength);
     }
 
     if( ThreeMinShortHornNextHornIndex < ThreeMinShortHornTotalCount &&
-    millisToZero < ThreeMinuteShortHorns[ThreeMinShortHornNextHornIndex] ) {
+    getMillisRemaining() < ThreeMinuteShortHorns[ThreeMinShortHornNextHornIndex] ) {
       ThreeMinShortHornNextHornIndex++;
       startHorn(shortHornLength);
     }
@@ -292,20 +294,22 @@ void goButtonPress(){
     running = false;
     startBuzzer(shortBuzzerLength);
     resetTime();
+    // if time isn't reset, make sure to save endMilli minus millis() to pausedMillisRemaining
   } else {
     // Go
     running = true;
+    endMilli = millis() + pausedMillisRemaining;
     startBuzzer(shortBuzzerLength);
-    millisLastChecked = millis();
+    //millisLastChecked = millis();
   }
 }
 
 void resetTime() {
   if(isFiveMinute) {
-    millisToZero = 360 * 1000 -1 ; // six minutes
+    setMillisRemaining(360 * 1000 -1) ; // six minutes
     resetArrayIndexes();
   } else {
-    millisToZero = 210 * 1000 -1; // three and a half minutes
+    setMillisRemaining( 210 * 1000 -1); // three and a half minutes
     resetArrayIndexes();
   }
   writeTime(true);
@@ -330,28 +334,37 @@ void checkTimeMode(){
   }
 }
 
-void updateTime(){
-  millisCurrent = millis();
-  //if(millisCurrent > millisLastChecked) {
-    if(millisToZero > (millisCurrent - millisLastChecked)) {
-      millisToZero = millisToZero - (millisCurrent - millisLastChecked);
+void isTimerPastZero(){
+  if(endMilli <= millis()){
+    if(isFiveMinute) {
+      resetToFiveMin();
     } else {
-      millisToZero = millisToZero - (millisCurrent - millisLastChecked);
-        if(isFiveMinute) {
-          resetToFiveMin();
-        } else {
-          // special case here: timer is stopped, but need to blow horn last time:
-          running = false; // three minute countdown, stop, reset to 3:30.
-          startHorn(longHornLength);
-          resetTime();
-        }
+      // special case here: timer is stopped, but need to blow horn last time:
+      running = false; // three minute countdown, stop, reset to 3:30.
+      startHorn(longHornLength);
+      resetTime();
     }
-    millisLastChecked = millisCurrent;
-  //}
+  }
+}
+
+unsigned long getMillisRemaining(){
+  if(running) {
+    return endMilli - millis();
+  } else {
+    return pausedMillisRemaining;
+  }
+}
+
+void setMillisRemaining(unsigned long millisRemaining){
+  if(running){
+    endMilli = millis() + millisRemaining;
+  } else {
+    pausedMillisRemaining = millisRemaining;
+  }
 }
 
 void resetToFiveMin(){
-  millisToZero += 300 * 1000 ; // five minutes - keep running
+  endMilli += 300 * 1000 ; // five minutes - keep running
   resetArrayIndexes();
   setArrayIndexesToFiveMin();
 }
@@ -400,5 +413,5 @@ int getSeconds(){
 
 int getTotalSeconds(){
   // we expect the timer to sound when zero is first display, not at the end of zero.
-  return (millisToZero / 1000) + 1;
+  return (getMillisRemaining() / 1000) + 1;
 }
