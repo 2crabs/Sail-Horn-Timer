@@ -26,8 +26,8 @@ const int FiveMinuteShortBuzzes[] =
 
 const int ThreeMinuteLongBuzzes[] =
   {
-    195000, 180000, 179000, 178000,
-    135000, 120000, 119000,
+    195000, 180000, 178500, 177000,
+    135000, 120000, 118500,
     75000,60000,
     15000, 0
   };
@@ -54,8 +54,8 @@ const int FiveMinuteLongHorns[] =
 
 const int ThreeMinuteLongHorns[] =
   {
-    180000, 179000, 178000,
-    120000, 119000,
+    180000, 178500, 177000,
+    120000, 118500,
     60000,
     0 // not really used. special case is handled below.
   };
