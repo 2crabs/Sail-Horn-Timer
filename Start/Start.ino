@@ -3,8 +3,6 @@
   
 #define DISP_CLK 2
 #define DISP_DIO 3
-#define RMT_CLK 4
-#define RMT_DIO 5
 #define FIVEMIN_PIN 11
 #define GOBTN_PIN 10
 #define BUZZER_PIN 7
@@ -115,7 +113,6 @@ const int brightness = BRIGHT_HIGH;
 //int brightness = BRIGHT_0;
 
 TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
-TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO, 200);
 
 void setup() {
   pinMode(FIVEMIN_PIN, INPUT_PULLUP);
@@ -130,8 +127,6 @@ void setup() {
 
   mainDisplay.clear();
   mainDisplay.setBrightness(brightness);
-  remoteDisplay.clear();
-  remoteDisplay.setBrightness(brightness);
 
   resetTime();
 }
@@ -396,10 +391,6 @@ void writeTime(bool force){
     mainDisplay.showString(" ",1,0);
     mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
     mainDisplay.showNumber( seconds, true, 2, 2);
-
-    remoteDisplay.showString(" ",1,0);
-    remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    remoteDisplay.showNumber( seconds, true, 2, 2);
   }
 }
 
