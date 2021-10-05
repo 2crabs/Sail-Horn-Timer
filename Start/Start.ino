@@ -1,9 +1,10 @@
 
-#include <TM1637TinyDisplay.h>
+//#include <TM1637TinyDisplay.h>
+#include "LEDDisplayDriver.h"
 #include <ArduinoBLE.h>
 
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
   #define DEBUG_PRINTLN(x)  Serial.println (x)
   #define DEBUG_PRINT(x)  Serial.print(x)
@@ -120,11 +121,17 @@ unsigned long pausedMillisRemaining;
 unsigned long millisCurrent;
 int seconds;
 
-const int brightness = BRIGHT_HIGH;
+unsigned long debugMillis1;
+unsigned long debugMillis2;
+
+//const int brightness = BRIGHT_HIGH;
 //int brightness = BRIGHT_7;
 //int brightness = BRIGHT_0;
 
-TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
+
+//int8_t dispArray[] = {0x00, 0x00, 0x00, 0x00};
+LEDDisplayDriver display(DISP_DIO, DISP_CLK, false, 4);
+//TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
 
 BLEService timerService("6dd77192-0d0c-49c4-a6ab-4d2c4eece29f"); // create service
 
@@ -179,8 +186,9 @@ void setup() {
   BLE.advertise();
 
 
-  mainDisplay.clear();
-  mainDisplay.setBrightness(brightness);
+  display.setDp(1);
+  //mainDisplay.clear();
+  //mainDisplay.setBrightness(brightness);
 
 
   resetTime();
@@ -197,9 +205,7 @@ void loop() {
   checkBuzzer();
   writeTime(false);
 
-  if(Serial){
-    Serial.println("In loop");
-  }
+
 
 }
 
@@ -450,11 +456,19 @@ int getFiveMinuteIndex(const int arrayToCheck[], int arrayLength){
 
 void writeTime(bool force){
   if(force || seconds != getSeconds()){
+    
+    debugMillis1 = millis();
     timeCharacteristic.writeValue(getTotalSeconds());   
     seconds = getSeconds();
-    mainDisplay.showString(" ",1,0);
-    mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    mainDisplay.showNumber( seconds, true, 2, 2);
+    
+display.setDp(1);
+display.showNum2Left(getMinutes());
+display.showNum2RightLZ(seconds);
+display.update();
+//    mainDisplay.showString(" ",1,0);
+//    mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+//    mainDisplay.showNumber( seconds, true, 2, 2);
+    DEBUG_PRINTLN(millis() - debugMillis1);
   }
 }
 
