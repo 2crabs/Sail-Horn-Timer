@@ -1,12 +1,10 @@
 
 #include <TM1637TinyDisplay.h>
+#include <ArduinoBLE.h>
   
 #define DISP_CLK 2
 #define DISP_DIO 3
-#define RMT_CLK 4
-#define RMT_DIO 5
 #define FIVEMIN_PIN 11
-#define GOBTN_PIN 10
 #define BUZZER_PIN 7
 #define HORN_PIN 8
 
@@ -115,11 +113,18 @@ const int brightness = BRIGHT_HIGH;
 //int brightness = BRIGHT_0;
 
 TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
-TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO, 200);
+
+BLEService timerService("6dd77192-0d0c-49c4-a6ab-4d2c4eece29f"); // create service
+
+// create switch characteristic and allow remote device to get notifications
+BLEShortCharacteristic timeCharacteristic("6dd77193-0d0c-49c4-a6ab-4d2c4eece29f", BLERead | BLENotify);
+// create button characteristic and allow remote device to read and write
+BLEBoolCharacteristic buttonCharacteristic("6dd77194-0d0c-49c4-a6ab-4d2c4eece29f", BLERead | BLEWrite);
+
 
 void setup() {
+  Serial.begin(115200);
   pinMode(FIVEMIN_PIN, INPUT_PULLUP);
-  pinMode(GOBTN_PIN, INPUT_PULLUP);
   pinMode(HORN_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
@@ -128,15 +133,44 @@ void setup() {
   initializeArrayVariables();
   isFiveMinute = digitalRead(FIVEMIN_PIN);
 
+  BLE.begin();
+
+  // set the local name peripheral advertises
+  BLE.setLocalName("LHYChorn");
+  BLE.setDeviceName("LHYC Horn");
+  // set the UUID for the service this peripheral advertises:
+  BLE.setAdvertisedService(timerService);
+
+  BLEDescriptor timeName("2901", "Remaining Time");
+  timeCharacteristic.addDescriptor(timeName);
+
+  
+  BLEDescriptor buttonName("2901", "Start/Reset");
+  buttonCharacteristic.addDescriptor(buttonName);
+
+  // add the characteristics to the service
+  timerService.addCharacteristic(timeCharacteristic);
+  timerService.addCharacteristic(buttonCharacteristic);
+
+  // add the service
+  BLE.addService(timerService);
+
+  timeCharacteristic.writeValue(0);
+  buttonCharacteristic.writeValue(0);
+
+  // start advertising
+  BLE.advertise();
+
+
   mainDisplay.clear();
   mainDisplay.setBrightness(brightness);
-  remoteDisplay.clear();
-  remoteDisplay.setBrightness(brightness);
+
 
   resetTime();
 }
 
 void loop() {
+  BLE.poll();
   readInput();
 
   if(running) {
@@ -145,6 +179,10 @@ void loop() {
   checkHorn();
   checkBuzzer();
   writeTime(false);
+
+  if(Serial){
+    Serial.println("In loop");
+  }
 
 }
 
@@ -270,7 +308,9 @@ bool shouldHornStop() {
 }
 
 void checkGoButton(){
-  if(digitalRead(GOBTN_PIN) == LOW){
+
+  // With move to BLE, need to  remove some of the debounce logic from this.
+  if(buttonCharacteristic.value()){
     if( !isGoButtonPressed) {
       isGoButtonPressed = true;
       if(lastGoButtonPress < (millis() - 20)
@@ -280,6 +320,7 @@ void checkGoButton(){
       }
     }
     lastGoButtonDown = millis();
+    buttonCharacteristic.setValue(0);
   } else {
     if(lastGoButtonPress < (millis() - 20)
       && lastGoButtonDown < (millis() - 20)){
@@ -391,15 +432,12 @@ int getFiveMinuteIndex(const int arrayToCheck[], int arrayLength){
 }
 
 void writeTime(bool force){
-  if(force || seconds != getSeconds()){   
+  if(force || seconds != getSeconds()){
+    timeCharacteristic.writeValue(getTotalSeconds());   
     seconds = getSeconds();
     mainDisplay.showString(" ",1,0);
     mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
     mainDisplay.showNumber( seconds, true, 2, 2);
-
-    remoteDisplay.showString(" ",1,0);
-    remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    remoteDisplay.showNumber( seconds, true, 2, 2);
   }
 }
 
