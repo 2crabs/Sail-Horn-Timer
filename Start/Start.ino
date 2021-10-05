@@ -1,12 +1,24 @@
 
 #include <TM1637TinyDisplay.h>
 #include <ArduinoBLE.h>
-  
+
+
+#define DEBUG
+#ifdef DEBUG
+  #define DEBUG_PRINTLN(x)  Serial.println (x)
+  #define DEBUG_PRINT(x)  Serial.print(x)
+#else
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT(x)
+#endif
+
 #define DISP_CLK 2
 #define DISP_DIO 3
 #define FIVEMIN_PIN 11
 #define BUZZER_PIN 7
 #define HORN_PIN 8
+
+
 
 const int FiveMinuteLongBuzzes[] =
   {
@@ -123,7 +135,12 @@ BLEBoolCharacteristic buttonCharacteristic("6dd77194-0d0c-49c4-a6ab-4d2c4eece29f
 
 
 void setup() {
+  
+  
+#ifdef DEBUG
   Serial.begin(115200);
+#endif
+
   pinMode(FIVEMIN_PIN, INPUT_PULLUP);
   pinMode(HORN_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);

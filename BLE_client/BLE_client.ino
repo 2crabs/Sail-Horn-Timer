@@ -10,6 +10,14 @@
 #include <stdlib.h>
 #include <TM1637TinyDisplay.h>
 
+#define DEBUG
+#ifdef DEBUG
+  #define DEBUG_PRINTLN(x)  Serial.println (x)
+  #define DEBUG_PRINT(x)  Serial.print(x)
+#else
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT(x)
+#endif
 
 #define GOBUTTON_PIN 36
 #define DISP_CLK 4
@@ -50,12 +58,12 @@ static void notifyCallback(
     
     remainingSeconds = pData[1]*256 + pData[0];
 
-        Serial.print("Notify callback for characteristic ");
-    Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
-    Serial.print(" of data length ");
-    Serial.println(length);
-    Serial.print("data: ");
-    Serial.println(remainingSeconds);
+    DEBUG_PRINT("Notify callback for characteristic ");
+    DEBUG_PRINT(pBLERemoteCharacteristic->getUUID().toString().c_str());
+    DEBUG_PRINT(" of data length ");
+    DEBUG_PRINTLN(length);
+    DEBUG_PRINT("data: ");
+    DEBUG_PRINTLN(remainingSeconds);
 }
 
 class MyClientCallback : public BLEClientCallbacks {
@@ -64,60 +72,60 @@ class MyClientCallback : public BLEClientCallbacks {
 
   void onDisconnect(BLEClient* pclient) {
     connected = false;
-    Serial.println("onDisconnect");
+    DEBUG_PRINTLN("onDisconnect");
   }
 };
 
 bool connectToServer() {
-    Serial.print("Forming a connection to ");
-    Serial.println(myDevice->getAddress().toString().c_str());
+    DEBUG_PRINT("Forming a connection to ");
+    DEBUG_PRINTLN(myDevice->getAddress().toString().c_str());
     
     BLEClient*  pClient  = BLEDevice::createClient();
-    Serial.println(" - Created client");
+    DEBUG_PRINTLN(" - Created client");
 
     pClient->setClientCallbacks(new MyClientCallback());
 
     // Connect to the remove BLE Server.
     pClient->connect(myDevice);  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
-    Serial.println(" - Connected to server");
+    DEBUG_PRINTLN(" - Connected to server");
 
     // Obtain a reference to the service we are after in the remote BLE server.
     BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
     if (pRemoteService == nullptr) {
-      Serial.print("Failed to find our service UUID: ");
-      Serial.println(serviceUUID.toString().c_str());
+      DEBUG_PRINT("Failed to find our service UUID: ");
+      DEBUG_PRINTLN(serviceUUID.toString().c_str());
       pClient->disconnect();
       return false;
     }
-    Serial.println(" - Found our service");
+    DEBUG_PRINTLN(" - Found our service");
 
 
     // Obtain a reference to the characteristic in the service of the remote BLE server.
     pTimeCharacteristic = pRemoteService->getCharacteristic(timeCharacteristicUUID);
     pButtonCharacteristic = pRemoteService->getCharacteristic(buttonCharacteristicUUID);
     if (pTimeCharacteristic == nullptr) {
-      Serial.print("Failed to find time characteristic UUID: ");
-      Serial.println(timeCharacteristicUUID.toString().c_str());
+      DEBUG_PRINT("Failed to find time characteristic UUID: ");
+      DEBUG_PRINTLN(timeCharacteristicUUID.toString().c_str());
       pClient->disconnect();
       return false;
     }
-    Serial.println(" - Found time characteristic");
+    DEBUG_PRINTLN(" - Found time characteristic");
 
     if (pButtonCharacteristic == nullptr) {
-      Serial.print("Failed to find button characteristic UUID: ");
-      Serial.println(buttonCharacteristicUUID.toString().c_str());
+      DEBUG_PRINT("Failed to find button characteristic UUID: ");
+      DEBUG_PRINTLN(buttonCharacteristicUUID.toString().c_str());
       pClient->disconnect();
       return false;
     }
-    Serial.println(" - Found button characteristic");
+    DEBUG_PRINTLN(" - Found button characteristic");
 
     // Read the value of the characteristic.
     if(pTimeCharacteristic->canRead()) {
 
       uint8_t* pData = (uint8_t*)pTimeCharacteristic->readValue().c_str();
-      Serial.print("The time characteristic value was: ");
-      Serial.print(pData[1]*256 + pData[0]);
-      Serial.println();
+      DEBUG_PRINT("The time characteristic value was: ");
+      DEBUG_PRINT(pData[1]*256 + pData[0]);
+      DEBUG_PRINTLN();
     }
 
     if(pTimeCharacteristic->canNotify())
@@ -134,8 +142,8 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
    * Called for each advertising BLE server.
    */
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    Serial.print("BLE Advertised Device found: ");
-    Serial.println(advertisedDevice.toString().c_str());
+    DEBUG_PRINT("BLE Advertised Device found: ");
+    DEBUG_PRINTLN(advertisedDevice.toString().c_str());
 
     // We have found a device, let us now see if it contains the service we are looking for.
     if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
@@ -150,7 +158,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 }; // MyAdvertisedDeviceCallbacks
 
 void goButtonPress(){
-    Serial.println("Go button pressed.");
+    DEBUG_PRINTLN("Go button pressed.");
     
     pButtonCharacteristic->writeValue(1, 1);
 }
@@ -202,8 +210,11 @@ int getTotalSeconds(){
 
 
 void setup() {
+
+#ifdef DEBUG
   Serial.begin(115200);
-  Serial.println("Starting Arduino BLE Client application...");
+#endif
+  DEBUG_PRINTLN("Starting Arduino BLE Client application...");
   BLEDevice::init("");
 
 
@@ -232,9 +243,9 @@ void loop() {
   // connected we set the connected flag to be true.
   if (foundServer == true) {
     if (connectToServer()) {
-      Serial.println("We are now connected to the BLE Server.");
+      DEBUG_PRINTLN("We are now connected to the BLE Server.");
     } else {
-      Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+      DEBUG_PRINTLN("We have failed to connect to the server; there is nothin more we will do.");
     }
     foundServer = false;
   }
@@ -243,7 +254,7 @@ void loop() {
   // with the current time since boot.
   if (connected) {
     //String newValue = "Time since boot: " + String(millis()/1000);
-    //Serial.println("Setting new characteristic value to \"" + newValue + "\"");
+    //DEBUG_PRINTLN("Setting new characteristic value to \"" + newValue + "\"");
     
     // Set the characteristic's value to be the array of bytes that is actually a string.
     //pRemoteCharacteristic->writeValue(newValue.c_str(), newValue.length());
