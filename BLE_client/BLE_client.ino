@@ -20,8 +20,8 @@
 #endif
 
 #define GOBUTTON_PIN 36
-#define DISP_CLK 4
-#define DISP_DIO 5
+#define DISP_CLK 22
+#define DISP_DIO 21
 
 bool isGoButtonPressed = false;
 unsigned long lastGoButtonPress;
