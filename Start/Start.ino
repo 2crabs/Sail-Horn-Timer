@@ -1,5 +1,6 @@
 
-#include <TM1637TinyDisplay.h>
+//#include <TM1637TinyDisplay.h>
+#include "LEDDisplayDriver.h"
   
 #define DISP_CLK 2
 #define DISP_DIO 3
@@ -110,12 +111,16 @@ unsigned long pausedMillisRemaining;
 unsigned long millisCurrent;
 int seconds;
 
-const int brightness = BRIGHT_HIGH;
+//const int brightness = BRIGHT_HIGH;
 //int brightness = BRIGHT_7;
 //int brightness = BRIGHT_0;
 
-TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
-TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO, 200);
+//TM1637TinyDisplay mainDisplay(DISP_CLK, DISP_DIO);
+//TM1637TinyDisplay remoteDisplay(RMT_CLK, RMT_DIO, 200);
+
+LEDDisplayDriver mainDisplay2(DISP_DIO, DISP_CLK, false, 4);
+LEDDisplayDriver remoteDisplay2(RMT_DIO, RMT_CLK, false, 4);
+
 
 void setup() {
   pinMode(FIVEMIN_PIN, INPUT_PULLUP);
@@ -128,10 +133,13 @@ void setup() {
   initializeArrayVariables();
   isFiveMinute = digitalRead(FIVEMIN_PIN);
 
-  mainDisplay.clear();
-  mainDisplay.setBrightness(brightness);
-  remoteDisplay.clear();
-  remoteDisplay.setBrightness(brightness);
+  mainDisplay2.setDp(1);
+  remoteDisplay2.setDp(1);
+
+  // mainDisplay.clear();
+  // mainDisplay.setBrightness(brightness);
+  // remoteDisplay.clear();
+  // remoteDisplay.setBrightness(brightness);
 
   resetTime();
 }
@@ -393,13 +401,24 @@ int getFiveMinuteIndex(const int arrayToCheck[], int arrayLength){
 void writeTime(bool force){
   if(force || seconds != getSeconds()){   
     seconds = getSeconds();
-    mainDisplay.showString(" ",1,0);
-    mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    mainDisplay.showNumber( seconds, true, 2, 2);
 
-    remoteDisplay.showString(" ",1,0);
-    remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
-    remoteDisplay.showNumber( seconds, true, 2, 2);
+    mainDisplay2.setDp(1);
+    mainDisplay2.showNum2Left(getMinutes());
+    mainDisplay2.showNum2RightLZ(seconds);
+    mainDisplay2.update();
+
+    remoteDisplay2.setDp(1);
+    remoteDisplay2.showNum2Left(getMinutes());
+    remoteDisplay2.showNum2RightLZ(seconds);
+    remoteDisplay2.update();
+
+    // mainDisplay.showString(" ",1,0);
+    // mainDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+    // mainDisplay.showNumber( seconds, true, 2, 2);
+
+    // remoteDisplay.showString(" ",1,0);
+    // remoteDisplay.showNumberDec( getMinutes(),0b11100000, false, 1, 1);
+    // remoteDisplay.showNumber( seconds, true, 2, 2);
   }
 }
 
